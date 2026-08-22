@@ -1,20 +1,30 @@
 # clawd-audit-md-agent
 
-Un skill au format agentskills.io qui range les fichiers d'instructions d'un projet. Il lit le
-`CLAUDE.md` ou l'`AGENTS.md`, va chercher dans le code ce qui confirme ou contredit chaque ligne,
-et rend un plan de redistribution : ce qui reste à la racine, ce qui part en fiche, ce qui
-s'archive, ce qui se supprime. Rien ne s'écrit avant validation.
+**Il raccourcit le `CLAUDE.md` ou l'`AGENTS.md` d'un projet.** Format agentskills.io. Il lit le
+fichier, va chercher dans le code ce qui confirme ou contredit chaque ligne, et rend un plan : ce
+qui reste à la racine, ce qui sort, où ça sort, ce qui s'archive, ce qui se supprime. Rien ne
+s'écrit avant validation.
+
+Le fichier racine est chargé en entier au début de chaque session, donc chaque ligne est payée pour
+toujours, qu'elle serve ou non. Presque tout ce qu'il contient peut vivre dans un skill ou une
+fiche liée et ne charger que quand ça sert.
 
 Testé pour Hermes Agent et OpenClaw. Il marche aussi chez Claude Code et Codex, qui lisent le même
 standard. La variante avec manifeste et slash command s'appelle `clawd-audit-md`.
 
 ## Ce qu'il fait, et que les autres ne font pas
 
-Il confronte au code. Un chemin cité doit exister, une commande citée doit être dans le
-`package.json` ou le `Makefile`, un glob de règle doit matcher au moins un fichier, un import
-`@fichier` doit résoudre, une convention décrite se compte sur un échantillon. Une affirmation
-contredite est marquée fausse **avec sa preuve**. Une affirmation qu'il n'arrive pas à trancher est
-marquée non vérifiable et ne bouge pas, jamais fausse par défaut.
+**Il sait où sortir un bloc.** Un skill charge son corps seulement quand il sert, et sa description
+reste visible, donc il peut se déclencher tout seul. Une fiche liée ne charge que si l'agent décide
+d'ouvrir le lien, donc elle ne garantit rien. La règle qui tranche : une contrainte qui doit être
+appliquée va en skill, la fiche porte ce qu'on consulte. Sur un dépôt lu par Claude Code, il
+propose en plus les règles liées à des chemins, qui se chargent toutes seules.
+
+**Et il ne coupe rien sans preuve.** Un chemin cité doit exister, une commande citée doit être dans
+le `package.json` ou le `Makefile`, un glob de règle doit matcher au moins un fichier, un import
+`@fichier` doit résoudre, une convention décrite se compte sur un échantillon. Une ligne contredite
+est marquée fausse **avec sa preuve**. Une ligne qu'il n'arrive pas à trancher est marquée non
+vérifiable et ne bouge pas, jamais fausse par défaut.
 
 Il couvre aussi les fichiers de définition de sous-agents, qui cassent différemment : un
 frontmatter mal formé n'est pas chargé, sans erreur et sans avertissement. Et il sait passer sur un

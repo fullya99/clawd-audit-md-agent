@@ -1,7 +1,7 @@
 ---
 name: clawd-audit-md-agent
-description: "Audite un CLAUDE.md ou un AGENTS.md et confronte chaque affirmation au code réel du dépôt. Sépare le vrai du faux avec une preuve par ligne, puis redistribue : l'essentiel reste à la racine, le détail part en fiche docs/, l'obsolète part dans archives/, le vide est supprimé. Couvre aussi les fichiers de définition d'agents et le catalogue de skills, qui cassent en silence. Lit la mémoire de l'agent sans jamais y écrire. N'écrit rien tant que le rapport n'a pas été validé. Se déclenche sur : audite mon CLAUDE.md, mon fichier d'instructions est trop long, est-ce que les règles sont encore vraies, vérifier les instructions du projet, CLAUDE.md obsolète, nettoyer AGENTS.md, sortir le contenu vers docs, mes instructions décrivent un projet qui n'existe plus, ranger mes skills, alléger le contexte de chaque session."
-version: 1.0.0
+description: "Raccourcit le CLAUDE.md ou l'AGENTS.md d'un projet en sortant le détail vers des fiches liées ou des skills, pour que la racine ne porte plus que ce qui doit être vrai à chaque session. Confronte chaque ligne au code réel avant de la déplacer, avec une preuve à côté de chaque coupe, et ne touche pas à ce qu'il ne peut pas vérifier. Traite aussi les fichiers de sous-agents et le catalogue de skills. Lit la mémoire de l'agent sans jamais y écrire. N'écrit rien tant que le rapport n'a pas été validé. Se déclenche sur : mes instructions sont trop longues, optimise mon CLAUDE.md, allège mon AGENTS.md, audit des instructions, sortir le contenu vers docs, est-ce que les règles sont encore vraies, instructions obsolètes, ranger mes skills, réduire le contexte chargé à chaque session."
+version: 1.1.0
 author: fullya99
 license: MIT
 platforms: [linux, macos, windows]
@@ -13,17 +13,21 @@ metadata:
 
 # Clawd audit md, pour un agent permanent
 
-> **Le contrat** : aucune ligne déplacée ni supprimée sans une preuve tirée du dépôt, aucune
-> écriture avant que l'opérateur ait lu le rapport et dit oui, et jamais une ligne écrite dans ta
-> propre mémoire.
+> **Le contrat** : un fichier racine court, où chaque ligne restante est vraie et prouvée, et tout
+> le reste rangé là où ça ne coûte rien tant que ça ne sert pas. Rien n'est écrit avant validation,
+> et jamais une ligne dans ta propre mémoire.
 
-Un fichier d'instructions grossit tout seul. Personne ne relit les lignes du haut, et au bout de
-six mois il décrit un projet qui n'existe plus. Chaque ligne fausse se paie deux fois, en tokens à
-chaque session et en erreurs commises parce qu'on y croit.
+**Le but est de raccourcir.** Un fichier d'instructions grossit tout seul, personne ne relit les
+lignes du haut, et il finit par décrire un projet qui n'existe plus. Il est chargé en entier au
+début de chaque session, donc chaque ligne est payée pour toujours, qu'elle serve ou non.
 
-Ce skill lit ces fichiers, va chercher dans le code ce qui confirme ou contredit chaque
-affirmation, et propose une redistribution. Il ne réécrit pas le projet, il range ce qui y est
-déjà écrit.
+La bonne image : ce fichier est de la mémoire vive, pas du disque. Presque tout ce qu'il contient
+peut vivre ailleurs et ne charger que quand ça sert, dans un skill ou dans une fiche liée. Il y a
+quatre étages, ils ne se valent pas, et choisir le bon est le vrai travail. C'est dans
+`references/les-quatre-etages.md`.
+
+**La vérification sert à ça, elle n'est pas le but.** On ne déplace pas une ligne qu'on n'a pas
+comprise, et on ne supprime pas une ligne fausse sans montrer en quoi elle l'est.
 
 **Avant d'écrire quoi que ce soit**, charge le skill de style s'il est installé. Sinon, le minimum
 tient en une ligne : français, ton direct, aucun tiret cadratin, aucun point-virgule, aucune
@@ -35,7 +39,8 @@ tournure qui sent le texte généré.
 
 | Situation | Ce que tu fais |
 |---|---|
-| « audite mes instructions », « c'est trop long », « c'est faux » | les six phases, en entier |
+| « c'est trop long », « allège », « optimise mes instructions » | les six phases, en entier. C'est le cas courant |
+| « audite mes instructions », « c'est faux » | pareil, les six phases. Le tri produit le raccourcissement |
 | « vérifie juste si c'est encore vrai » | phases 1 et 2, tu rends le tableau des preuves et tu t'arrêtes |
 | « sors ça dans docs/ » sur un bloc précis | phases 3 et 5 sur ce bloc, la preuve reste obligatoire |
 | « range mes skills » | l'annexe catalogue en fin de fiche, pas les six phases |
@@ -176,7 +181,7 @@ Une ligne dont le contenu est déjà écrit ailleurs ne part pas en fiche, elle 
 
 ### Phase 2. Vérification contre le code
 
-C'est le coeur du skill. Lance d'abord le contrôle mécanique.
+C'est ce qui rend les coupes défendables. Lance d'abord le contrôle mécanique.
 
 ```bash
 bash "$SKILL/scripts/verif-refs.sh" CLAUDE.md
@@ -246,12 +251,24 @@ Un bloc, c'est une règle, pas une ligne. Chaque bloc reçoit exactement une ét
 | Étiquette | Critère | Destination |
 |---|---|---|
 | `RACINE` | vrai, et vrai partout dans le dépôt, tout le temps | reste dans le fichier racine |
-| `DOC` | vrai, mais ne sert que pour une tâche, un dossier ou un module | fiche `docs/<sujet>.md`, un lien depuis la racine |
+| `SORTIR` | vrai, mais ne sert que pour une tâche, un dossier ou un module | un skill, ou une fiche liée |
 | `ARCHIVE` | était vrai, et garde une valeur de trace | `archives/`, avec sa date et la raison |
 | `SUPPRIMER` | faux sans rien à garder, ou vide de sens | supprimé, listé dans le rapport avec la preuve |
 
-Le détail, avec les cas limites, est dans `references/criteres-classement.md`. Les formes de règles
-inutiles, avec pour chacune la raison, sont dans `references/anti-patterns.md`.
+**`SORTIR` est l'étiquette qui fait le travail**, et elle demande un second choix. Un skill charge
+son corps seulement quand il sert, et sa description reste visible, donc il peut se déclencher
+tout seul. Une fiche liée ne charge que si tu décides d'ouvrir le lien, donc elle ne garantit rien.
+
+La règle qui tranche : **une contrainte qui doit être appliquée ne va jamais dans une fiche.** Elle
+va en skill. La fiche porte ce qu'on consulte, du contexte, une décision passée, un piège
+documenté. Et si aucune sortie ne tient la contrainte, elle reste à la racine, même si ça allonge.
+
+Chez Claude Code il existe un étage de plus, la règle liée à des chemins, qui se charge toute seule
+quand l'agent touche un fichier qui matche. Tu ne l'as pas, mais si tu audites un dépôt lu par
+Claude Code, c'est souvent la meilleure sortie et tu la proposes. Tout est dans
+`references/les-quatre-etages.md`. Les cas limites du classement sont dans
+`references/criteres-classement.md`, les formes de règles inutiles dans
+`references/anti-patterns.md`.
 
 Une règle fausse qui redevient vraie en corrigeant une valeur n'est pas à supprimer. Tu corriges la
 valeur, tu gardes la règle, et tu montres l'ancienne et la nouvelle dans le rapport.
@@ -268,11 +285,23 @@ date, et tu t'arrêtes là. **Tu ne tranches jamais tout seul**, même quand une
 ### Phase 5. Restructuration
 
 Le fichier racine vise **50 lignes**, plafond dur **100**. Il porte ce qu'est le projet en deux
-phrases, les commandes réelles, les contraintes sans exception, et les liens vers les fiches.
+phrases, les commandes réelles, les contraintes sans exception, et la table de renvoi.
 
-Chaque fiche `docs/` commence par dire quand elle s'applique, puis donne les règles. Une fiche
-traite un sujet. Au-delà de 150 lignes, coupe-la en deux. Les gabarits sont dans
-`references/modeles.md`.
+**La table de renvoi est ce qui fait tenir les 50 lignes.** Chaque ligne dit la situation avant de
+donner le chemin, sinon elle ne se fait pas ouvrir.
+
+```markdown
+| Quand | Où |
+|---|---|
+| Tu ajoutes ou modifies une migration | `docs/migrations.md` |
+```
+
+Chaque fiche commence par dire quand elle s'applique, puis donne les règles. Une fiche traite un
+sujet. Au-delà de 150 lignes, coupe en deux. En dessous de 15, ne la crée pas, ces lignes rejoignent
+une fiche voisine ou restent à la racine.
+
+**Un `@import` n'allège rien**, il colle le contenu dans le fichier racine au démarrage. Si le
+fichier audité en contient, dis-le. Les gabarits sont dans `references/modeles.md`.
 
 **Tu ne casses pas les liens.** Quand un contenu se déplace, tu repasses sur tout le dépôt et tu
 corriges les références vers son ancien emplacement, puis tu relances le script sur le résultat.
@@ -287,8 +316,8 @@ bash "$SKILL/scripts/verif-refs.sh" CLAUDE.md
 Tu présentes le plan complet **avant d'écrire quoi que ce soit**. Quatre morceaux, dans cet ordre.
 
 1. Le tableau des vérifications, une ligne par affirmation, avec le verdict et la preuve.
-2. Le diff du fichier racine, avec son compte de lignes avant et après.
-3. La liste des fiches à créer, chacune avec son nombre de lignes.
+2. Le diff du fichier racine, avec son compte de lignes avant et après, et le gain en pourcentage.
+3. La liste de ce qui sort, avec pour chaque morceau son étage et son nombre de lignes.
 4. Le tableau des suppressions, une ligne par bloc, avec la preuve.
 
 Puis tu attends. L'opérateur approuve, corrige, ou refuse bloc par bloc. **Tu n'écris qu'après.**
@@ -348,7 +377,8 @@ l'opérateur décide.
 
 | Fichier | Quand le lire |
 |---|---|
-| `references/criteres-classement.md` | phase 3, pour trancher entre `DOC` et `ARCHIVE`, ou sur un cas limite |
+| `references/les-quatre-etages.md` | phases 3 et 5, choisir où sort un bloc. La fiche la plus utile du lot |
+| `references/criteres-classement.md` | phase 3, pour trancher entre `SORTIR` et `ARCHIVE`, ou sur un cas limite |
 | `references/anti-patterns.md` | phase 3, pour justifier un `SUPPRIMER` autrement qu'à l'instinct |
 | `references/modeles.md` | phase 5, gabarit du fichier racine et gabarit d'une fiche |
 | `references/fichiers-agents.md` | phase 2, quand le dépôt déclare des sous-agents |

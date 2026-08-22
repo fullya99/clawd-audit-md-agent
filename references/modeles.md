@@ -31,10 +31,10 @@ avant de toucher au code.>
 
 ## Où chercher le reste
 
-| Sujet | Fiche |
+| Quand | Où |
 |---|---|
-| <domaine> | `docs/<sujet>.md` |
-| <domaine> | `docs/<sujet>.md` |
+| <la situation qui fait ouvrir> | `docs/<sujet>.md` |
+| <la situation qui fait ouvrir> | `docs/<sujet>.md` |
 ````
 
 **Les commandes sont copiées du manifeste réel**, pas retapées de mémoire. Si `npm run dev`
@@ -43,16 +43,42 @@ n'existe pas dans `package.json`, il n'entre pas ici.
 **La section contraintes ne prend que ce qui n'a aucune exception.** Une règle avec un « sauf
 dans... » part en fiche, et son exception avec elle.
 
-**La table de liens est la partie qui fait tenir les 50 lignes.** Sans elle, tout remonte.
+**La table de renvoi est la partie qui fait tenir les 50 lignes.** Sans elle, tout remonte. Sa
+colonne de gauche dit la situation, pas le domaine : c'est elle qui décide si la fiche s'ouvre. Une
+table qui liste des sujets est une liste de fichiers, et elle sera ignorée.
+
+Les règles parties en `.claude/rules/` n'ont pas besoin d'une ligne ici, elles se chargent toutes
+seules. Une ligne reste utile quand le dépôt est lu par un autre agent que Claude Code, qui ne
+connaît pas cet étage.
 
 Si le fichier dépasse 100 lignes après restructuration, c'est qu'un bloc classé `RACINE` aurait dû
-partir en `DOC`. Reprends la phase 3 sur les blocs les plus longs, pas sur tous.
+sortir. Reprends la phase 3 sur les blocs les plus longs, pas sur tous.
 
 ---
 
+## Une règle liée à des chemins
+
+C'est la meilleure sortie quand la contrainte doit tenir sur un dossier précis, parce qu'elle se
+charge toute seule au bon moment. Claude Code uniquement.
+
+````markdown
+---
+paths:
+  - "<glob qui matche au moins un fichier>"
+---
+
+# <Sujet>
+
+- **<Règle.>** <Ce qu'on fait.>
+- **<Règle.>**
+````
+
+Le glob se vérifie avant d'écrire le fichier. Un `paths:` qui ne matche rien donne une règle morte,
+et rien ne le signale. Un `[` non échappé dans un glob le rend invalide, il matche zéro fichier.
+
 ## Une fiche `docs/`
 
-Un sujet par fiche. Au-delà de 150 lignes, coupe en deux.
+Un sujet par fiche. Au-delà de 150 lignes, coupe en deux. En dessous de 15, ne la crée pas.
 
 ````markdown
 # <Sujet>
@@ -112,15 +138,15 @@ Quatre morceaux, dans cet ordre. C'est ce que l'opérateur lit avant de dire oui
 
 ## 2. Fichier racine
 
-<N> lignes avant, <N> après. Diff :
+<N> lignes avant, <N> après, soit <N> % en moins. Diff :
 
 ```diff
 ```
 
-## 3. Fiches à créer
+## 3. Ce qui sort
 
-| Fiche | Lignes | Vient de |
-|---|---|---|
+| Destination | Étage | Lignes | Vient de |
+|---|---|---|---|
 
 ## 4. Suppressions
 
