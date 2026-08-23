@@ -1,7 +1,7 @@
 ---
 name: clawd-audit-md-agent
 description: "Raccourcit le CLAUDE.md ou l'AGENTS.md d'un projet en sortant le détail vers des fiches liées ou des skills, pour que la racine ne porte plus que ce qui doit être vrai à chaque session. Confronte chaque ligne au code réel avant de la déplacer, avec une preuve à côté de chaque coupe, et ne touche pas à ce qu'il ne peut pas vérifier. Traite aussi les fichiers de sous-agents et le catalogue de skills. Lit la mémoire de l'agent sans jamais y écrire. N'écrit rien tant que le rapport n'a pas été validé. Se déclenche sur : mes instructions sont trop longues, optimise mon CLAUDE.md, allège mon AGENTS.md, audit des instructions, sortir le contenu vers docs, est-ce que les règles sont encore vraies, instructions obsolètes, ranger mes skills, réduire le contexte chargé à chaque session."
-version: 1.1.0
+version: 1.1.1
 author: fullya99
 license: MIT
 platforms: [linux, macos, windows]

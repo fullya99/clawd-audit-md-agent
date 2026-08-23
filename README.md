@@ -79,6 +79,21 @@ cette classe d'outil : un skill qui lit tes fichiers d'instructions, tu l'instal
 
 Chez OpenClaw et chez Claude Code, aucun scan de ce type, le clone suffit.
 
+## Mise à jour
+
+Installé par clone, donc il se met à jour par un `git pull` dans le dossier où tu l'as posé.
+
+```bash
+git -C ~/.hermes/skills/clawd-audit-md-agent pull
+```
+
+`hermes skills update` ne s'applique pas ici, il ne connaît que les skills passés par son
+installeur, et celui-ci ne peut pas y passer pour la raison expliquée plus haut.
+
+Chez Hermes, `skills_list` voit le changement tout de suite. L'index de skills du prompt système,
+lui, se construit en début de session, donc une description modifiée n'y apparaît qu'à la session
+suivante.
+
 ## Usage
 
 Nomme le projet, puis demande.
